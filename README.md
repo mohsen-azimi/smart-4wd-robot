@@ -3,6 +3,4 @@ This repository contains the codes I used to create a smart 4WD robot for autono
 
 
 
-Other helpful repositories: 
-
-* https://github.com/MoebiusTech/MecanumRobot-ArduinoMega2560
+See `./Misc` for other helpful repositories.
