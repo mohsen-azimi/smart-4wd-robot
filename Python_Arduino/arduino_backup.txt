@@ -1,0 +1,289 @@
+// NOTE: requires the Encoder library.
+// 1) open Tools -> Manage Libraries...
+// 2) install "Encoder" by Paul Stoffregen v1.4.1
+#include <Encoder.h>
+
+int wheelSpeed = 20;
+int timedelay = 100;
+String readString, servo1, servo2, servo3, servo4, servo5;
+
+
+
+// --- SPD Motor ---
+class SPDMotor {
+  public:
+  SPDMotor( int encoderA, int encoderB, bool encoderReversed, int motorPWM, int motorDir1, int motorDir2 );
+
+  /// Set the PWM speed and direction pins.
+  /// pwm = 0, stop (no active control)
+  /// pwm = 1 to 255, proportion of CCW rotation
+  /// pwm = -1 to -255, proportion of CW rotation
+  void speed( int pwm );
+
+  /// Activate a SHORT BRAKE mode, which shorts the motor drive EM, clamping motion.
+  void hardStop();
+
+  /// Get the current speed.
+  int getSpeed();
+
+  /// Get the current rotation position from the encoder.
+  long getEncoderPosition();
+
+  private:
+    Encoder *_encoder;
+    bool _encoderReversed;
+    int _motorPWM, _motorDir1, _motorDir2;
+
+    // Current speed setting.
+    int _speed;
+};
+
+SPDMotor::SPDMotor( int encoderA, int encoderB, bool encoderReversed, int motorPWM, int motorDir1, int motorDir2 ) {
+  _encoder = new Encoder(encoderA, encoderB);
+  _encoderReversed = encoderReversed;
+
+  _motorPWM = motorPWM;
+  pinMode( _motorPWM, OUTPUT );
+  _motorDir1 = motorDir1;
+  pinMode( _motorDir1, OUTPUT );
+  _motorDir2 = motorDir2;
+  pinMode( _motorDir2, OUTPUT );
+}
+
+/// Set the PWM speed and direction pins.
+/// pwm = 0, stop (no active control)
+/// pwm = 1 to 255, proportion of CCW rotation
+/// pwm = -1 to -255, proportion of CW rotation
+void SPDMotor::speed( int speedPWM ) {
+  _speed = speedPWM;
+  if( speedPWM == 0 ) {
+    digitalWrite(_motorDir1,LOW);
+    digitalWrite(_motorDir2,LOW);
+    analogWrite( _motorPWM, 255);
+  } else if( speedPWM > 0 ) {
+    digitalWrite(_motorDir1, LOW );
+    digitalWrite(_motorDir2, HIGH );
+    analogWrite( _motorPWM, speedPWM < 255 ? speedPWM : 255);
+  } else if( speedPWM < 0 ) {
+    digitalWrite(_motorDir1, HIGH );
+    digitalWrite(_motorDir2, LOW );
+    analogWrite( _motorPWM, (-speedPWM) < 255 ? (-speedPWM): 255);
+  }
+}
+
+/// Activate a SHORT BRAKE mode, which shorts the motor drive EM, clamping motion.
+void SPDMotor::hardStop() {
+    _speed = 0;
+    digitalWrite(_motorDir1,HIGH);
+    digitalWrite(_motorDir2,HIGH);
+    analogWrite( _motorPWM, 0);
+}
+
+/// Get the current speed.
+int SPDMotor::getSpeed() {
+    return _speed;
+}
+
+/// Get the current rotation position from the encoder.
+long SPDMotor::getEncoderPosition() {
+  long position = _encoder->read();
+  return _encoderReversed ? -position : position;
+}
+
+//                      SPDMotor( encoderA, encoderB, encoderReversed,  motorPWM,  motorDir1,  motorDir2 ) {
+
+//SPDMotor *motorLF = new SPDMotor(18, 31, true, 12, 34, 35); // <- Encoder reversed to make +position measurement be forward.
+//SPDMotor *motorRF = new SPDMotor(19, 38, false, 8, 36, 37); // <- NOTE: Motor Dir pins reversed for opposite operation
+//SPDMotor *motorLR = new SPDMotor( 3, 49, true,  9, 43, 42); // <- Encoder reversed to make +position measurement be forward.
+//SPDMotor *motorRR = new SPDMotor( 2, A1, false, 5, A4, A5); // <- NOTE: Motor Dir pins reversed for opposite operation
+
+SPDMotor *motorLF = new SPDMotor(18, 31, true, 12, 34, 35); // <- Encoder reversed to make +position measurement be forward.
+SPDMotor *motorRF = new SPDMotor(19, 38, false, 8, 36, 37); // <- NOTE: Motor Dir pins reversed for opposite operation
+SPDMotor *motorLR = new SPDMotor( 3, 49, true,  9, 43, 42); // <- Encoder reversed to make +position measurement be forward.
+SPDMotor *motorRR = new SPDMotor( 2, A1, false, 5, A5, A4); // <- NOTE: Motor Dir pins reversed for opposite operation
+
+
+
+void setup()
+{
+ Serial.begin(9600);
+ Serial.setTimeout(.1);  // added by Mohsen
+}
+
+
+void moveRobot(int LF, int LR, int RF, int RR, int motion_time)
+{
+        motorLF->speed(LF); motorRF->speed(RF); 
+        motorLR->speed(LR); motorRR->speed(RR);
+        delay(motion_time);
+        motorLF->speed(0); motorRF->speed(0); 
+        motorLR->speed(0); motorRR->speed(0);
+}
+
+
+//
+//
+void loop() {
+
+  while (Serial.available()) {
+    delay(3);  
+    if (Serial.available() >0) {
+      char c = Serial.read();  //gets one byte from serial buffer
+      readString += c; //makes the string readString
+    } 
+  }
+
+  if (readString.length() >0) {
+//      Serial.println(readString); //see what was received
+      
+      // expect a string like 07002100 containing the two servo positions      
+      servo1 = readString.substring(0, 4); //get the first four characters
+      servo2 = readString.substring(4, 8); //get the next four characters 
+      servo3 = readString.substring(8, 12); //get the next four characters 
+      servo4 = readString.substring(12, 16); //get the next four characters 
+      servo5 = readString.substring(16, 20); //get the next four characters 
+      
+
+      
+      int n1, n2, n3, n4, n5; //declare as number  
+      char carray1[6], carray2[6], carray3[6], carray4[6], carray5[6]; //magic needed to convert string to a number 
+      
+      servo1.toCharArray(carray1, sizeof(carray1));
+      n1 = atoi(carray1); 
+      
+      servo2.toCharArray(carray2, sizeof(carray2));
+      n2 = atoi(carray2); 
+      
+      servo3.toCharArray(carray3, sizeof(carray3));
+      n3 = atoi(carray3); 
+      
+      servo4.toCharArray(carray4, sizeof(carray4));
+      n4 = atoi(carray4);
+      
+      servo5.toCharArray(carray5, sizeof(carray5));
+      n5 = atoi(carray5);
+
+      
+      Serial.print(" 1:");  //print ot serial monitor to see results
+      Serial.print(n1);  //print ot serial monitor to see results
+      Serial.print(", 2:");
+      Serial.print(n2);      
+      Serial.print(", 3:");
+      Serial.print(n3);
+      Serial.print(", 4:");
+      Serial.print(n4);
+      Serial.print(", Duration:");
+      Serial.print(n5);
+      
+      moveRobot(n1, n2, n3, n4, n5);
+    readString="";
+  } 
+}
+
+
+
+       
+//     while (!Serial.available());
+//    delay(3);  // Delay to allow buffer to fill,  
+//
+//      String command = Serial.readString();
+////      lastReceiveTime = millis(); // At this moment we have received the data
+//
+//      
+//      int lf = 0;
+//      int lr = 0;
+//      int rf = 0;
+//      int rr = 0;
+//
+//      const char* cmd = command.c_str(); // convert String into C-string
+//
+//      
+////      sscanf(command.c_str(), "%d,%d,%d,%d", &lf, &lr, &rf, &rr);
+//      int moves = sscanf(cmd, "%d %d %d %d", &lf, &lr, &rf, &rr);
+////      int moves = sscanf(command.c_str(), "%d,%d,%d,%d", &lf, &lr, &rf, &rr);
+//
+//      Serial.print(F("moves="));
+//      Serial.print(moves);
+//      Serial.print(F("lf="));
+//      Serial.print(lf);
+//      Serial.print(F(", lr="));
+//      Serial.print(lr);
+
+//      delay(1000);
+       
+//     if (command == "moveForward") {
+//       motorLF->speed(wheelSpeed); motorRF->speed(wheelSpeed); 
+//       motorLR->speed(wheelSpeed); motorRR->speed(wheelSpeed); 
+//       delay(timedelay);
+//       }
+//     else if (command == "moveBackward") {
+//       motorLF->speed(-wheelSpeed); motorRF->speed(-wheelSpeed); 
+//       motorLR->speed(-wheelSpeed); motorRR->speed(-wheelSpeed); 
+//       delay(timedelay);
+//       }
+//
+//     else if (command == "moveRightForward") {
+//        motorLF->speed(wheelSpeed); motorRF->speed(0); 
+//        motorLR->speed(0); motorRR->speed(wheelSpeed); 
+//       delay(timedelay);
+//       }
+//     else if (command == "moveLeftForward") {
+//        motorLF->speed(0); motorRF->speed(wheelSpeed); 
+//        motorLR->speed(wheelSpeed); motorRR->speed(0); 
+//       delay(timedelay);
+//       }
+//     else if (command == "moveRightBackward") {
+//      motorLF->speed(0); motorRF->speed(-wheelSpeed); 
+//      motorLR->speed(-wheelSpeed); motorRR->speed(wheelSpeed);  
+//       delay(timedelay);
+//       }
+//     else if (command == "moveLeftBackward") {
+//         motorLF->speed(-wheelSpeed); motorRF->speed(0); 
+//         motorLR->speed(0); motorRR->speed(-wheelSpeed);  
+//       delay(timedelay);
+//       }
+//     else if (command == "rotateRight") {
+//        motorLF->speed(wheelSpeed); motorRF->speed(-wheelSpeed); 
+//        motorLR->speed(wheelSpeed); motorRR->speed(-wheelSpeed); 
+//       delay(timedelay);
+//       }
+//     else if (command == "rotateLeft") {
+//        motorLF->speed(-wheelSpeed); motorRF->speed(wheelSpeed); 
+//        motorLR->speed(-wheelSpeed); motorRR->speed(wheelSpeed);       
+//        delay(timedelay);
+//       }
+//     else {
+//        motorLF->hardStop(); motorRF->hardStop();
+//        motorLR->hardStop(); motorRR->hardStop();
+//        
+//        motorLF->speed(0); motorRF->speed(0); 
+//        motorLR->speed(0); motorRR->speed(0);
+////       delay(1timedelay);
+//       }
+
+  
+
+      // copy codes from: https://howtomechatronics.com/projects/arduino-mecanum-wheels-robot/
+//      motorLF->speed(-10); motorRF->speed(-10); // by Mohsen
+//      motorLR->speed(-10); motorRR->speed(-10); // by Mohsen
+//      delay(2000); // motion time
+//      
+//      motorLF->speed(30); motorRF->speed(30); // by Mohsen
+//      motorLR->speed(30); motorRR->speed(30); // by Mohsen
+//      delay(2000); // motion time
+
+     
+//      {
+//          motorLF->hardStop(); motorRF->hardStop();
+//          motorLR->hardStop(); motorRR->hardStop();
+          
+
+//          delay(500);
+//          motorLF->speed(0); motorRF->speed(0);
+//          motorLR->speed(0); motorRR->speed(0);
+//      }
+    
+//  }
+
+
+ 

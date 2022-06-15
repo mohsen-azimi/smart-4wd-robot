@@ -1,0 +1,3 @@
+[submodule "Misc/Misc/MecanumRobot-ArduinoMega2560"]
+	path = Misc/Misc/MecanumRobot-ArduinoMega2560
+	url = https://github.com/MoebiusTech/MecanumRobot-ArduinoMega2560.git
