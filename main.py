@@ -1,11 +1,9 @@
 """
 Smart 4WD Robot for SHM
-By: Mohsen Azimi
-2021
+Copyright (c) Mohsen Azimi, 2022
 """
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import argparse
 
+import argparse
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set Robot parameters', add_help=False)
@@ -18,6 +16,8 @@ def get_args_parser():
     # -- Camera (RGB-d)
     parser.add_argument('--camera', default='l515', type=str,
                         help="Select the sensor type")
+    parser.add_argument('--imshow', default=False, type=bool,
+                        help="Show RGB-D frames")
 
 
     # --port
@@ -43,7 +43,7 @@ def get_args_parser():
 
 def main(args):
     print(args)
-    # if
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
