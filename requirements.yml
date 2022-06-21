@@ -1,0 +1,18 @@
+name: robot
+channels:
+- conda-forge
+- defaults
+collections:
+  -
+dependencies:
+- python=3.8
+- matplotlib
+- numpy
+- pip
+- pip:
+  - jsons
+  - pyrealsense2==2.50.0.3812
+  - pyyaml
+  - opencv-python==4.5.3.56
+  - tkinter
+  - open3d==0.13.0

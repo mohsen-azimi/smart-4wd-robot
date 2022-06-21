@@ -18,7 +18,7 @@ def mouse_coord(event, x, y, args, params):
 
 
 # Initialize Camera
-camera = L515(read_bag=1, record_bag=0)
+camera = L515(read_bag=0, record_bag=0)
 # camera.reset()
 # camera.set_options()
 i = 0
@@ -69,13 +69,13 @@ while True:
 
         # # save to png
         # if camera.save_png:
-        #     if i % 1000 == 0:
-        #         cv.imwrite('outputs/depth/depthimage_' + str(i) + '.png', depth_image_colorised)
+        #     if i % 1 == 0:
+        #         cv.imwrite('outputs/depth/depth_' + str(i) + '.png', depth_image_colorised)
         #         cv.imwrite('outputs/depth_clipped/depth_clipped_' + str(i) + '.png', depth_clipped)
-        #         cv.imwrite('outputs/color/colorimage_' + str(i) + '.png', color_image)
-
-        i += 1
-        print(i)
+        #         cv.imwrite('outputs/color/color_' + str(i) + '.png', color_image)
+        #
+        # i += 1
+        # print(i)
         # print(pcd)
         # o3d.visualization.draw_geometries(pcd, zoom=.8)
 
