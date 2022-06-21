@@ -15,13 +15,13 @@ See `./Misc` for other helpful repositories.
 
 ## 1. Clone the repository
 
-https://github.com/mohsen-azimi/smart-4wd-robot.git robot
+`$ git clone https://github.com/mohsen-azimi/smart-4wd-robot.git robot`
 
-cd robot
+`$ cd robot`
 
 ## 2. Create `conda` environment
 
-`conda env create --file requirements.yml conda activate robot`
+`$ conda env create --file requirements.yml conda activate robot`
 
 ## 3. To be updated...
 
