@@ -1,4 +1,4 @@
-name: robot
+name: robots
 channels:
 - conda-forge
 - defaults

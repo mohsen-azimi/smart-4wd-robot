@@ -145,7 +145,7 @@ class UGV:
 
     def control_by_keyboard(self):
         """
-        Control the robot using the keyboard keys (listed above)
+        Control the robots using the keyboard keys (listed above)
         :return:
         """
         with keyboard.Listener(

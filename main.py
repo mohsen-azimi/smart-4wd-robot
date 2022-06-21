@@ -43,7 +43,7 @@ def get_args_parser():
 
 def main(args):
     print(args)
-
+    # if
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
