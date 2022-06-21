@@ -1,8 +1,8 @@
 # smart-4wd-robot
 This repository contains the codes I used to create a smart 4WD robot for autonomous navigation and inspection projects.
 
-||
-||-`./realsense_L515` contains the codes to use **Realsense L515** lidar camera for navigation, inspection, and SLAM.
+
+`./realsense_L515` contains the codes to use **Realsense L515** lidar camera for navigation, inspection, and SLAM.
 
 
 
@@ -11,7 +11,7 @@ See `./Misc` for other helpful repositories.
 
 ---
 
-# To use run this repository on your computer 
+# To use this repository on your computer 
 
 ## 1. Clone the repository
 
