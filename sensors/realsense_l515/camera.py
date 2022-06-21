@@ -32,6 +32,7 @@ class Frame(object):
 
 
 class L515:
+    """ You can copy and adjust this class for other cameras"""
     def __init__(self, enable_rgbd=True, enable_imu=None, save_png=None,
                  record_bag=None, read_bag=None):
 
@@ -50,7 +51,7 @@ class L515:
         self.record_bag = record_bag
         self.record_bag_path = None
 
-        self._cfg = yaml.load(open('camera_config.yaml', 'r'), Loader=yaml.FullLoader)
+        self._cfg = yaml.load(open('./sensors/realsense_l515/camera_config.yaml', 'r'), Loader=yaml.FullLoader)
         self.imu_fps = self._cfg['imu']['fps']
         self.rgb_fps = self._cfg['rgb']['fps']
         self.rgb_res = (self._cfg['rgb']['width'], self._cfg['rgb']['height'])

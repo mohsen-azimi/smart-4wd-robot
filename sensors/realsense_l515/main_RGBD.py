@@ -24,6 +24,7 @@ camera = L515(read_bag=0, record_bag=0)
 i = 0
 # try:
 # Streaming loop
+
 while True:
     # This call waits until a new coherent set of frames is available on a device maintain frame timing
 

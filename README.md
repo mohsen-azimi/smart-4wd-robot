@@ -11,7 +11,7 @@ See `./Misc` for other helpful repositories.
 
 ---
 
-# To use this repository on your computer 
+# To use this repository,  
 
 ## 1. Clone the repository
 
