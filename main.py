@@ -37,7 +37,8 @@ def get_args_parser():
     parser.add_argument('--output_dir', default='output/',
                         help='path where to save')
     # --model
-    parser.add_argument('--model', default='yolov5s.pt')
+    parser.add_argument('--model', default='yolov5s.pt',
+                        help='select the detector, ArCU, yolov5s, etc.')
 
     # more parser: https://github.com/mohsen-azimi/detr/blob/3513d7d3a4aaee1da9aa0e22c365ffb64922eb15/main_face.py#L20
     return parser

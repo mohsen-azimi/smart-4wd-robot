@@ -14,5 +14,6 @@ dependencies:
   - pyrealsense2==2.50.0.3812
   - pyyaml
   - opencv-python==4.5.3.56
+  - opencv-contrib-python==4.6.0.66
   - tkinter
   - open3d==0.13.0
