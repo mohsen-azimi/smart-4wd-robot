@@ -21,10 +21,13 @@ See `./Misc` for other helpful repositories.
 
 ## 2. Create `conda` environment
 
-`$ conda env create --file requirements.yml` 
+`$ conda env create -n robot python=3.8` 
 
 `$ conda activate robot`
 
+`$ conda install -c anaconda pip -y`
+
+`$ pip install -r requirements.txt`
 
 ## 3. To be updated...
 

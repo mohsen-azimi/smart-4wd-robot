@@ -20,8 +20,7 @@ from djitellopy import tello
 
 
 
-
-class UGV:
+class AGV:
     def __init__(self, port='COM11', baudrate=9600, timeout=.1, wheel_speed=30):
         self.max_speed = 200
         self.wheel_speed = wheel_speed

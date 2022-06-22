@@ -7,7 +7,8 @@ import argparse
 import cv2
 
 from sensors.realsense_l515.camera import L515
-
+import utils.cv2_utils as utils
+from robots import AGV
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set Robot parameters', add_help=False)
@@ -15,6 +16,13 @@ def get_args_parser():
     # AGV
     parser.add_argument('--controller', default='keyboard', type=str,
                         help="Select the controller, keyboard, auto, [Telegram]")
+    parser.add_argument('--wheel_speed', default=30, type=int,
+                        help="Try and find one suitable based on the DC motors")
+    # --port
+    parser.add_argument('--port', default='/dev/ttyUSB0', type=str,
+                        help="Select the port for arduino (/dev/ttyUSB0 for linux, COM# for windows")
+    parser.add_argument('--baudrate', default=9600, type=int)
+    parser.add_argument('--timeout', default=0.1, type=float)
 
     # -- Camera (RGB-d)
     # parser.add_argument('--camera', default='l515', type=str,
@@ -22,11 +30,6 @@ def get_args_parser():
     # parser.add_argument('--imshow', default=False, type=bool,
     #                     help="Show RGB-D frames")
 
-    # --port
-    parser.add_argument('--port', default='/dev/ttyUSB0', type=str,
-                        help="Select the port for arduino (/dev/ttyUSB0 for linux, COM# for windows")
-    parser.add_argument('--baudrate', default=9600, type=int)
-    parser.add_argument('--timeout', default=0.1, type=float)
 
     # -- uav?
     parser.add_argument('--with_uav', default=False, type=bool,
@@ -37,8 +40,8 @@ def get_args_parser():
     parser.add_argument('--output_dir', default='output/',
                         help='path where to save')
     # --model
-    parser.add_argument('--model', default='yolov5s.pt',
-                        help='select the detector, ArCU, yolov5s, etc.')
+    parser.add_argument('--detector', default='ArUco',
+                        help='select the detector, ArUco, yolov5s, etc.')
 
     # more parser: https://github.com/mohsen-azimi/detr/blob/3513d7d3a4aaee1da9aa0e22c365ffb64922eb15/main_face.py#L20
     return parser
@@ -46,28 +49,25 @@ def get_args_parser():
 
 def main(args):
     print(args)
+    if args.detector == 'ArUco':
+        obj_detector = utils.ArUco_marker()
 
-    # Initialize Camera
+    robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
+
     camera = L515(read_bag=0, record_bag=0)
-    # camera.reset()
-    # camera.set_options()
-    i = 0
-    # try:
-    # Streaming loop
 
     while True:
         # This call waits until a new coherent set of frames is available on a device maintain frame timing
 
-        # read camera data
-        f = camera.get_frame()
-        color_image = f.color_image
-        depth_image = f.depth_image
-        ir_image = f.ir_image
-        accel = f.accel
-        gyro = f.gyro
+        frame = camera.get_frame()
+        color_image = frame.color_image
+        depth_image = frame.depth_image
+        # ir_image = frame.ir_image
+        # accel = frame.accel
+        # gyro = frame.gyro
 
         # print(gyro)
-        pcd = f.point_cloud
+        # pcd = frame.point_cloud
 
         depth_clipped = camera.clip_distance(depth_image, color_image, 1, 3)
 
@@ -79,24 +79,24 @@ def main(args):
         # depth_image_colorised = cv.flip(depth_image_colorised, 1)
         # infrared = cv.flip(infrared, 1)
 
+        (corners, ids, rejected) = obj_detector.detect_obj(color_image)
+        # print(corners)
+
         if camera.enable_rgbd:
-            cv2.namedWindow('Color', cv2.WINDOW_AUTOSIZE)
-            cv2.namedWindow('Depth', cv2.WINDOW_AUTOSIZE)
-            cv2.namedWindow('depth_clipped', cv2.WINDOW_AUTOSIZE)
-            # cv.namedWindow('IR', cv.WINDOW_AUTOSIZE)
-            # cv.imshow('IR', infrared)
+            utils.im_show(640, 480, ('Color', color_image), show_bbox=False)
 
-            # cv.setMouseCallback('Depth', mouse_coord)  # to show distance on mouse
-            # # Show distance for a specific point
-            # cv.circle(depth_image_colorised, point, 5, (0, 0, 255))
-            # distance = depth_image[point[1], point[0]] * camera.depth_scale
             #
-            # cv.putText(depth_image_colorised, f'{distance:.3f} m', (point[0], point[1] - 20), cv.FONT_HERSHEY_PLAIN, 2,
-            #            (0, 255, 255), 4)
-
-            cv2.imshow('Color', color_image)
-            cv2.imshow('Depth', depth_image_colorised)
-            cv2.imshow('depth_clipped', depth_clipped)
+            # # cv.namedWindow('IR', cv.WINDOW_AUTOSIZE)
+            # # cv.imshow('IR', infrared)
+            #
+            # # cv.setMouseCallback('Depth', mouse_coord)  # to show distance on mouse
+            # # # Show distance for a specific point
+            # # cv.circle(depth_image_colorised, point, 5, (0, 0, 255))
+            # # distance = depth_image[point[1], point[0]] * camera.depth_scale
+            # #
+            # # cv.putText(depth_image_colorised, f'{distance:.3f} m', (point[0], point[1] - 20), cv.FONT_HERSHEY_PLAIN, 2,
+            # #            (0, 255, 255), 4)
+            #
 
             # # save to png
             # if camera.save_png:
@@ -112,6 +112,7 @@ def main(args):
 
         if cv2.waitKey(1) & 0xff == 27:  # 27 = ESC
             break
+
 
     # finally:
     # Stop streaming
