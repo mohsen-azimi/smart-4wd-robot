@@ -1,7 +1,7 @@
 """ Copyright (c) Mohsen Azimi, 2022"""
 
 # Importing Libraries
-import cv2  # Import the OpenCV library
+import cv2 as cv2  # Import the OpenCV library
 
 
 # import numpy as np  # Import Numpy library
@@ -13,7 +13,7 @@ import cv2  # Import the OpenCV library
 
 # robot = UGV()
 # import time
-class ArUco:
+class z_ArUco_marker:
     def __init__(self, desired_aruco_dictionary="DICT_4X4_1000"):
 
         self.desired_aruco_dictionary = desired_aruco_dictionary
@@ -57,7 +57,7 @@ class ArUco:
         return (corners, ids, rejected)
 
 if __name__ == '__main__':
-    marker = ArUco()
+    marker = z_ArUco_marker()
     print(marker)
 
 
