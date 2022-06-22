@@ -20,7 +20,8 @@ def get_args_parser():
                         help="Try and find one suitable based on the DC motors")
     # --port
     parser.add_argument('--port', default='/dev/ttyUSB0', type=str,
-                        help="Select the port for arduino (/dev/ttyUSB0 for linux, COM# for windows")
+                        help="Select the port (/dev/ttyUSB0 for linux, COM# for windows), dmesg | grep ttyUSB,"
+                             " if failed: sudo usermod -a -G tty $USER &&  sudo usermod -a -G dialout $USER")
     parser.add_argument('--baudrate', default=9600, type=int)
     parser.add_argument('--timeout', default=0.1, type=float)
 

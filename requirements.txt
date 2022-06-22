@@ -1,5 +1,5 @@
-python=3.8
-numpypyserial
+numpy
+pyserial
 jsons
 pyrealsense2==2.50.0.3812
 pyyaml

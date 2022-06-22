@@ -3,7 +3,7 @@ import numpy as np
 import serial  # pip install pyserial
 import time
 from pynput import keyboard
-from djitellopy import tello
+# from djitellopy import tello
 
 
 # for Linux:
