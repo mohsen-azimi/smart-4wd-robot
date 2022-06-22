@@ -21,7 +21,10 @@ See `./Misc` for other helpful repositories.
 
 ## 2. Create `conda` environment
 
-`$ conda env create --file requirements.yml conda activate robot`
+`$ conda env create --file requirements.yml` 
+
+`$ conda activate robot`
+
 
 ## 3. To be updated...
 
