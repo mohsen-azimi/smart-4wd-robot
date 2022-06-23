@@ -61,11 +61,16 @@ def im_show(h, w, *args, **kwargs):
     for arg in args:
         cv2.namedWindow(arg[0], cv2.WINDOW_NORMAL)
         cv2.resizeWindow(arg[0], h, w)
-        cv2.imshow(arg[0], arg[1])
+        img = arg[1]
+        if img.ndim==2:
+            img = cv2.applyColorMap(cv2.convertScaleAbs(arg[1], alpha=.03), cv2.COLORMAP_JET) # colorize depth
+
+        cv2.imshow(arg[0], img)
 
     for key, value in kwargs.items():
         if key == 'show_bbox':
-            print('show_bbox')
+            pass
+            # print('show_bbox')
 
 
 

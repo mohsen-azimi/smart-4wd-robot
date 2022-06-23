@@ -220,7 +220,7 @@ class L515:
 
     def clip_distance(self, depth_image, color_image, clipping_distance1, clipping_distance2):
 
-        clipping_distance1 = clipping_distance1 / self.depth_scale
+        clipping_distance1 = clipping_distance1 / self.depth_scale # multiply or divide?!
         clipping_distance2 = clipping_distance2 / self.depth_scale
         grey_color = 153
         depth_image_3d = np.dstack((depth_image, depth_image, depth_image))

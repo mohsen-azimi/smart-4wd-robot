@@ -3,6 +3,8 @@ import numpy as np
 import serial  # pip install pyserial
 import time
 from pynput import keyboard
+
+
 # from djitellopy import tello
 
 
@@ -19,13 +21,17 @@ from pynput import keyboard
 #                     writeTimeout=2)
 
 
-
 class AGV:
     def __init__(self, port='COM11', baudrate=9600, timeout=.1, wheel_speed=30):
         self.max_speed = 200
         self.wheel_speed = wheel_speed
         self.motion_time = 1  # second
         self.cache = None
+        self.moves = ["moveForward", "moveSidewaysLeft", "moveSidewaysRight", "moveSidewaysLeft", "moveRightForward",
+                      "moveLeftForward", "moveRightBackward", "moveLeftBackward", "rotateRight", "rotateLeft",
+                      "rotateLeft",
+                      "stopMoving"]
+
         # self.move_uav = None
         print("wait...")
         time.sleep(1)
@@ -34,7 +40,6 @@ class AGV:
         # Default direction: LeftFrontWheel, LeftBackWheel,RightFrontWheel, RightBackWheel
         self.dir = np.array([0, 0, 0, 0])
         self.serial = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-
 
     #     self.drone = tello.Tello()
     #     self.drone.speed = 10
@@ -63,8 +68,9 @@ class AGV:
         speed: [-255, 255]
         duration:  milliseconds
         """
-
-        if direction == 'moveForward':
+        if direction == self.cache:
+            pass
+        elif direction == 'moveForward':
             self.dir = np.array([1, 1, 1, 1])
         elif direction == 'moveBackward':
             self.dir = np.array([-1, -1, -1, -1])
@@ -90,12 +96,12 @@ class AGV:
         self.dir = np.array([0, 0, 0, 0])
         return self
 
-    def test(self, wheel=0):
+    def test_move(self, wheel=0):
         """ 
         Test if each wheel works
         """
         self.dir = np.array([0, 0, 0, 0])
-        self.dir[direction]=1
+        self.dir[wheel] = 1
         return self
 
     def keyboard_on_press(self, key):
@@ -128,7 +134,6 @@ class AGV:
             self.wheel_speed += 5
         elif key == keyboard.KeyCode.from_char('['):
             self.wheel_speed -= 5
-
 
     def keyboard_on_release(self, key):
         self.stop().to_arduino()

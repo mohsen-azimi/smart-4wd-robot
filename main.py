@@ -5,17 +5,19 @@ Copyright (c) Mohsen Azimi, 2022
 
 import argparse
 import cv2
+import numpy as np
 
 from sensors.realsense_l515.camera import L515
 import utils.cv2_utils as utils
 from robots import AGV
 
+
 def get_args_parser():
     parser = argparse.ArgumentParser('Set Robot parameters', add_help=False)
 
     # AGV
-    parser.add_argument('--controller', default='keyboard', type=str,
-                        help="Select the controller, keyboard, auto, [Telegram]")
+    parser.add_argument('--controller', default='aruco', type=str,
+                        help="Select the controller, keyboard, aruco, auto, [Telegram]")
     parser.add_argument('--wheel_speed', default=30, type=int,
                         help="Try and find one suitable based on the DC motors")
     # --port
@@ -30,7 +32,6 @@ def get_args_parser():
     #                     help="Select the sensor type")
     # parser.add_argument('--imshow', default=False, type=bool,
     #                     help="Show RGB-D frames")
-
 
     # -- uav?
     parser.add_argument('--with_uav', default=False, type=bool,
@@ -61,6 +62,7 @@ def main(args):
         # This call waits until a new coherent set of frames is available on a device maintain frame timing
 
         frame = camera.get_frame()
+
         color_image = frame.color_image
         depth_image = frame.depth_image
         # ir_image = frame.ir_image
@@ -82,9 +84,70 @@ def main(args):
 
         (corners, ids, rejected) = obj_detector.detect_obj(color_image)
         # print(corners)
+        if ids is not None:
+            if [1] in ids:
+
+                # robot.move(direction=robot.moves[1 - 1]).to_arduino()
+                # robot.cache = robot.moves[1 - 1]
+                idx = np.where(ids == 1)
+                # print(idx[0][0])
+                marker_corner = corners[idx[0][0]][idx[1][0]]
+                # print(idx, marker_corner)
+
+                corners = marker_corner.reshape((4, 2))
+                (top_left, top_right, bottom_right, bottom_left) = corners
+
+                # Convert the (x,y) coordinate pairs to integers
+                top_right = (int(top_right[0]), int(top_right[1]))
+                bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
+                bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
+                top_left = (int(top_left[0]), int(top_left[1]))
+
+                # Draw the bounding box of the ArUco detection
+                cv2.line(color_image, top_left, top_right, (0, 255, 0), 2)
+                cv2.line(color_image, top_right, bottom_right, (0, 255, 0), 2)
+                cv2.line(color_image, bottom_right, bottom_left, (0, 255, 0), 2)
+                cv2.line(color_image, bottom_left, top_left, (0, 255, 0), 2)
+
+                # Calculate and draw the center of the ArUco marker
+                center_x = int((top_left[0] + bottom_right[0]) / 2.0)
+                center_y = int((top_left[1] + bottom_right[1]) / 2.0)
+                cv2.circle(color_image, (center_x, center_y), 6, (0, 0, 255), -1)
+
+                # print(depth_image.shape, center_x, camera.depth_scale)
+
+                # Draw the ArUco marker ID on the video frame
+                # The ID is always located at the top_left of the ArUco marker
+                distance = depth_image[center_y-1, center_x-1] * camera.depth_scale
+                cv2.putText(color_image,  f'{distance:0.2f}',
+                            (top_left[0], top_left[1] - 25),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            2.5, (0, 255, 0), 2)
+
+                if distance>1.0:
+                    robot.move(direction=robot.moves[1 - 1]).to_arduino()
+                    robot.cache = robot.moves[1 - 1]
+                else:
+                    robot.stop().to_arduino()
+                    robot.cache = None
+
+                # show the bbox
+
+
+            else:
+                robot.stop().to_arduino()
+                robot.cache = None
 
         if camera.enable_rgbd:
-            utils.im_show(640, 480, ('Color', color_image), show_bbox=False)
+            utils.im_show(640, 480, ('color_image', depth_image),  show_bbox=False)
+
+            # for (marker_corner, marker_id) in zip(corners, ids):
+            #     # print(marker_id, "-----")
+            #     if marker_id[0] == 1:
+            #         # print(robot.moves[marker_id[0] - 1])
+            #         break
+
+
 
             #
             # # cv.namedWindow('IR', cv.WINDOW_AUTOSIZE)
@@ -113,7 +176,6 @@ def main(args):
 
         if cv2.waitKey(1) & 0xff == 27:  # 27 = ESC
             break
-
 
     # finally:
     # Stop streaming
