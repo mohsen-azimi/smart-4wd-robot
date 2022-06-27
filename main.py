@@ -57,7 +57,7 @@ def main(args):
     robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
 
     camera = L515(read_bag=0, record_bag=0)
-
+    # camera.reset()
     while True:
         # This call waits until a new coherent set of frames is available on a device maintain frame timing
 
@@ -85,6 +85,7 @@ def main(args):
         (corners, ids, rejected) = obj_detector.detect_obj(color_image)
         # print(corners)
         if ids is not None:
+            find_obj = True
             if [1] in ids:
 
                 # robot.move(direction=robot.moves[1 - 1]).to_arduino()
@@ -112,6 +113,9 @@ def main(args):
                 # Calculate and draw the center of the ArUco marker
                 center_x = int((top_left[0] + bottom_right[0]) / 2.0)
                 center_y = int((top_left[1] + bottom_right[1]) / 2.0)
+
+
+
                 cv2.circle(color_image, (center_x, center_y), 6, (0, 0, 255), -1)
 
                 # print(depth_image.shape, center_x, camera.depth_scale)
@@ -119,19 +123,43 @@ def main(args):
                 # Draw the ArUco marker ID on the video frame
                 # The ID is always located at the top_left of the ArUco marker
                 distance = depth_image[center_y-1, center_x-1] * camera.depth_scale
-                cv2.putText(color_image,  f'{distance:0.2f}',
-                            (top_left[0], top_left[1] - 25),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            2.5, (0, 255, 0), 2)
 
+
+
+                # obsticle_grid = camera.min_pooling(depth_image * camera.depth_scale, kernel_size=100, stride=2)
+                # utils.im_show(640, 480, ('obsticle_grid', obsticle_grid), show_bbox=False)
+
+                # obsticle_map[obsticle_map > 0.5] = 0
+                # obsticle_map[obsticle_map < 0.5] = 1
+                # obsticle_map = obsticle_map.astype(np.uint8)
+                # print(obsticle_map)
+                # print(obsticle_map.shape)
+
+
+                # direction = 'moveForward'
                 if distance>1.0:
-                    robot.move(direction=robot.moves[1 - 1]).to_arduino()
-                    robot.cache = robot.moves[1 - 1]
+                    print(center_x, center_y, distance)
+
+                    (w, h, _) = color_image.shape
+                    if center_x / w < 0.5 - 0.1:
+                        direction = 'rotateLeft'
+                    elif center_x / w > 0.5 + 0.1:
+                        direction = 'rotateRight'
+                    else:
+                        direction = 'moveForward'
+
+                    robot.move(direction=direction).to_arduino()
+                    robot.cache = direction
+
+                    cv2.putText(color_image, f'{distance:0.2f}, {direction}',
+                                (top_left[0], top_left[1] - 25),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                1.1, (0, 255, 0), 2)
+
                 else:
                     robot.stop().to_arduino()
                     robot.cache = None
 
-                # show the bbox
 
 
             else:
@@ -139,7 +167,7 @@ def main(args):
                 robot.cache = None
 
         if camera.enable_rgbd:
-            utils.im_show(640, 480, ('color_image', depth_image),  show_bbox=False)
+            utils.im_show(640, 480, ('color_image', color_image),  show_bbox=False)
 
             # for (marker_corner, marker_id) in zip(corners, ids):
             #     # print(marker_id, "-----")
@@ -174,12 +202,15 @@ def main(args):
             # print(pcd)
             # o3d.visualization.draw_geometries(pcd, zoom=.8)
 
+
+
         if cv2.waitKey(1) & 0xff == 27:  # 27 = ESC
             break
 
     # finally:
     # Stop streaming
     camera.pipeline.stop()
+
 
 
 if __name__ == '__main__':

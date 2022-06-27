@@ -238,6 +238,40 @@ class L515:
 
         return w, h
 
+    def min_pooling(self, x, kernel_size=20, stride=10):
+        """
+        Forward pass of max pooling
+        :param x: input, (N, C, H, W)
+        :return: The output by max pooling with kernel_size and stride
+        """
+
+
+        (H_in, W_in) = x.shape
+
+        # output dimensions
+        H_out = int(1 + (H_in - kernel_size) / stride)
+        W_out = int(1 + (W_in - kernel_size) / stride)
+
+        # output initialization
+        out = np.zeros((H_out, W_out))
+        for h in range(H_out):
+            for w in range(W_out):
+                # 4 corners of the current chunk
+                h_i = h * stride
+                h_j = h_i + kernel_size
+                w_i = w * stride
+                w_j = w_i + kernel_size
+                x_pool = x[h_i:h_j, w_i:w_j]
+
+                # clip the chunk to the distance
+                x_pool = np.where(x_pool < 0.2, 0.2, x_pool)
+                x_pool = np.where(x_pool > 4., 4., x_pool)
+
+                # max_pooling
+                out[h, w] = np.min(x_pool)
+        return out
+
+
     # def get_gyro_data(gyro):
     #     return np.asarray([gyro.x, gyro.y, gyro.z])
     #
