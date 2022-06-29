@@ -180,3 +180,60 @@ class AGV:
         # time.sleep(self.motion_time / 1000)
         received_data = self.serial.readline()
         print(received_data)
+
+    def to_arduino(self):
+        """
+        Send commands to arduino in one string
+        :return: print the received commands by arduino
+        """
+        servo_speeds = self.dir * self.wheel_speed
+        serial_command = format(servo_speeds[0], '04d') + format(servo_speeds[1], '04d') + \
+                         format(servo_speeds[2], '04d') + format(servo_speeds[3], '04d')
+
+        self.serial.write(bytes(serial_command, 'utf-8'))
+        # time.sleep(self.motion_time / 1000)
+        received_data = self.serial.readline()
+        print(received_data)
+
+
+class Fake_AGV:
+    def __init__(self, port='COM11', baudrate=9600, timeout=.1, wheel_speed=30):
+        self.max_speed = 200
+        self.wheel_speed = wheel_speed
+        self.motion_time = 1
+        self.cache = None
+        self.moves = ["moveForward", "moveSidewaysLeft", "moveSidewaysRight", "moveSidewaysLeft", "moveRightForward",
+                      "moveLeftForward", "moveRightBackward", "moveLeftBackward", "rotateRight", "rotateLeft",
+                      "rotateLeft",
+                      "stopMoving"]
+        self.dir = np.array([0, 0, 0, 0])
+        self.serial = None
+
+    #
+
+    def move(self, direction='rotate_right'):
+        pass
+        return self
+
+    def stop(self):
+        pass
+        return self
+
+    def test_move(self, wheel=0):
+        pass
+        return self
+
+    def keyboard_on_press(self, key):
+        pass
+
+    def keyboard_on_release(self, key):
+        pass
+
+    def control_by_keyboard(self):
+        pass
+
+    def calibrate(self):
+        pass
+
+    def to_arduino(self):
+        pass

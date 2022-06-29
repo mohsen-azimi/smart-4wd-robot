@@ -9,7 +9,7 @@ import numpy as np
 
 from sensors.realsense_l515.camera import L515
 import utils.cv2_utils as utils
-from robots import AGV
+from robots import AGV, Fake_AGV
 
 
 def get_args_parser():
@@ -54,7 +54,8 @@ def main(args):
     if args.detector == 'ArUco':
         obj_detector = utils.ArUco_marker()
 
-    robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
+    # robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
+    robot = Fake_AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
 
     camera = L515(read_bag=0, record_bag=0)
     # camera.reset()

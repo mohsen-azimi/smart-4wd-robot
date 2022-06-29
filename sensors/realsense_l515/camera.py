@@ -152,8 +152,8 @@ class L515:
         frameset = self.pipeline.wait_for_frames()
 
         color_frame = frameset.get_color_frame()
-        depth_frame = frameset.get_depth_frame()
-        ir_frame = frameset.get_infrared_frame()
+        # depth_frame = frameset.get_depth_frame()
+        # ir_frame = frameset.get_infrared_frame()
 
         # Align the depth frame to color frame
         aligned_frames = self.align.process(frameset)
