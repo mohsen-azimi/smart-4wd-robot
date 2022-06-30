@@ -3,8 +3,9 @@
 # Importing Libraries
 import cv2  # Import the OpenCV library
 
+import numpy as np  # Import Numpy library
 
-# import numpy as np  # Import Numpy library
+
 # import time
 # import os
 # import argparse
@@ -15,6 +16,8 @@ import cv2  # Import the OpenCV library
 # import time
 class ArUco_marker:
     def __init__(self, desired_aruco_dictionary="DICT_4X4_1000"):
+        self.target_id = None
+        self.target_corners = None
         self.desired_aruco_dictionary = desired_aruco_dictionary
         # The different ArUco dictionaries built into the OpenCV library.
 
@@ -43,7 +46,7 @@ class ArUco_marker:
         #         args["type"]))
         #     sys.exit(0)
 
-    def detect_obj(self, frame):
+    def find_objects(self, rgb, depth, depth_sf):
         # Load the ArUco dictionary
         # Detect ArUco markers in the video frame
         this_aruco_dictionary = cv2.aruco.Dictionary_get(self.ARUCO_DICT[self.desired_aruco_dictionary])
@@ -51,9 +54,103 @@ class ArUco_marker:
         # print("[INFO] detecting '{}' markers...".format(self.desired_aruco_dictionary))
 
         (corners, ids, rejected) = cv2.aruco.detectMarkers(
-            frame, this_aruco_dictionary, parameters=this_aruco_parameters)
+            rgb, this_aruco_dictionary, parameters=this_aruco_parameters)
 
-        return (corners, ids, rejected)
+        if ids is not None and len(ids) > 0:
+            self.target_corners = None # Reset the target corners each frame
+            if self.target_id in ids:
+                idx = np.where(ids == self.target_id)
+                marker_corner = corners[idx[0][0]][idx[1][0]]
+                self.target_corners = marker_corner.reshape((4, 2))
+
+                (top_left, top_right, bottom_right, bottom_left) = self.target_corners[0]
+
+                # Convert the (x,y) coordinate pairs to integers
+                top_right = (int(top_right[0]), int(top_right[1]))
+                bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
+                bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
+                top_left = (int(top_left[0]), int(top_left[1]))
+
+                # Calculate and draw the center of the ArUco marker
+                center_x = int((top_left[0] + bottom_right[0]) / 2.0)
+                center_y = int((top_left[1] + bottom_right[1]) / 2.0)
+
+                distance = depth[center_y-1, center_x-1] * depth_sf
+
+        return corners, ids, rejected
+
+    def draw_objects(self, rgb, depth, depth_sf, corners, ids):
+
+        if len(corners) > 0:
+            ids = ids.flatten()
+
+            for (markerCorner, markerID) in zip(corners, ids):
+                if markerID == self.target_id:
+                    box_color, text_color = (0, 0, 255), (0, 0, 255)
+                else:
+                    box_color, text_color = (0, 255, 0), (0, 255, 0)
+
+                # extract the marker corners (which are always returned in
+                # top-left, top-right, bottom-right, and bottom-left order)
+                corners = markerCorner.reshape((4, 2))
+                (topLeft, topRight, bottomRight, bottomLeft) = corners
+                # convert each of the (x, y)-coordinate pairs to integers
+                topRight = (int(topRight[0]), int(topRight[1]))
+                bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+                # draw the bounding box of the ArUCo detection
+                cv2.line(rgb, topLeft, topRight, box_color, 2)
+                cv2.line(rgb, topRight, bottomRight, box_color, 2)
+                cv2.line(rgb, bottomRight, bottomLeft, box_color, 2)
+                cv2.line(rgb, bottomLeft, topLeft, box_color, 2)
+                # compute and draw the center (x, y)-coordinates of the ArUco
+                # marker
+                cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                cv2.circle(rgb, (cX, cY), 4, (255, 0, 0), -1)
+                # draw the ArUco marker ID on the image
+                cv2.putText(rgb, str(markerID),
+                            (topLeft[0], topLeft[1] - int(rgb.shape[1]/100)), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, text_color, 2)
+                # print("[INFO] ArUco marker ID: {}".format(markerID))
+                # show the output image
+                # cv2.imshow("rgb", rgb)
+                # cv2.waitKey(0)
+    def show_distance_to_target(self):
+        if self.target_corners is not None:
+            corners = self.target_corners
+            (top_left, top_right, bottom_right, bottom_left) = corners
+
+            # Convert the (x,y) coordinate pairs to integers
+            top_right = (int(top_right[0]), int(top_right[1]))
+            bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
+            bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
+            top_left = (int(top_left[0]), int(top_left[1]))
+
+            # Draw the bounding box of the ArUco detection
+            cv2.line(rgb, top_left, top_right, (0, 255, 0), 2)
+            cv2.line(rgb, top_right, bottom_right, (0, 255, 0), 2)
+            cv2.line(rgb, bottom_right, bottom_left, (0, 255, 0), 2)
+            cv2.line(rgb, bottom_left, top_left, (0, 255, 0), 2)
+
+            # Calculate and draw the center of the ArUco marker
+            center_x = int((top_left[0] + bottom_right[0]) / 2.0)
+            center_y = int((top_left[1] + bottom_right[1]) / 2.0)
+
+            cv2.circle(rgb, (center_x, center_y), 6, (0, 0, 255), -1)
+
+            # Draw the ArUco marker ID on the video frame
+            # The ID is always located at the top_left of the ArUco marker
+            distance = depth[center_y - 1, center_x - 1] * depth_sf
+
+
+            cv2.putText(rgb, f'{distance:0.2f}, {direction}',
+                        (top_left[0], top_left[1] - 25),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1.1, (0, 255, 0), 2)
+
 
 
 def im_show(h, w, *args, **kwargs):
@@ -62,8 +159,8 @@ def im_show(h, w, *args, **kwargs):
         cv2.namedWindow(arg[0], cv2.WINDOW_NORMAL)
         cv2.resizeWindow(arg[0], h, w)
         img = arg[1]
-        if img.ndim==2:
-            img = cv2.applyColorMap(cv2.convertScaleAbs(arg[1], alpha=.03), cv2.COLORMAP_JET) # colorize depth
+        if img.ndim == 2:
+            img = cv2.applyColorMap(cv2.convertScaleAbs(arg[1], alpha=.03), cv2.COLORMAP_JET)  # colorize depth
 
         cv2.imshow(arg[0], img)
 
@@ -71,8 +168,6 @@ def im_show(h, w, *args, **kwargs):
         if key == 'show_bbox':
             pass
             # print('show_bbox')
-
-
 
 
 if __name__ == '__main__':
