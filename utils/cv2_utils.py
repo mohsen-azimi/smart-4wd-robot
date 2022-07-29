@@ -6,17 +6,9 @@ import cv2  # Import the OpenCV library
 import numpy as np  # Import Numpy library
 
 
-# import time
-# import os
-# import argparse
-
-# from utils import UGV
-
-# robot = UGV()
-# import time
 class ArUco_marker:
     def __init__(self, desired_aruco_dictionary="DICT_4X4_1000"):
-        self.target_id = None
+        self.obj_id = None
         self.target_corners = None
         self.desired_aruco_dictionary = desired_aruco_dictionary
         # The different ArUco dictionaries built into the OpenCV library.
@@ -41,51 +33,23 @@ class ArUco_marker:
             "DICT_ARUCO_ORIGINAL": cv2.aruco.DICT_ARUCO_ORIGINAL,
         }
 
-        # if ARUCO_DICT.get(desired_aruco_dictionary, None) is None:
-        #     print("[INFO] ArUCo tag of '{}' is not supported".format(
-        #         args["type"]))
-        #     sys.exit(0)
-
-    def find_objects(self, rgb, depth, depth_sf):
-        # Load the ArUco dictionary
+    def find_object(self, rgb, depth, depth_sf, obj_id=1, draw=False):
+        self.obj_id = obj_id
+        self.objects = []  # Reset the list of objects
         # Detect ArUco markers in the video frame
         this_aruco_dictionary = cv2.aruco.Dictionary_get(self.ARUCO_DICT[self.desired_aruco_dictionary])
         this_aruco_parameters = cv2.aruco.DetectorParameters_create()
-        # print("[INFO] detecting '{}' markers...".format(self.desired_aruco_dictionary))
 
         (corners, ids, rejected) = cv2.aruco.detectMarkers(
             rgb, this_aruco_dictionary, parameters=this_aruco_parameters)
 
-        if ids is not None and len(ids) > 0:
-            self.target_corners = None # Reset the target corners each frame
-            if self.target_id in ids:
-                idx = np.where(ids == self.target_id)
-                marker_corner = corners[idx[0][0]][idx[1][0]]
-                self.target_corners = marker_corner.reshape((4, 2))
+        self.get_distance(rgb, depth, depth_sf, corners, ids, draw=draw)
 
-                (top_left, top_right, bottom_right, bottom_left) = self.target_corners[0]
-
-                # Convert the (x,y) coordinate pairs to integers
-                top_right = (int(top_right[0]), int(top_right[1]))
-                bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
-                bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
-                top_left = (int(top_left[0]), int(top_left[1]))
-
-                # Calculate and draw the center of the ArUco marker
-                center_x = int((top_left[0] + bottom_right[0]) / 2.0)
-                center_y = int((top_left[1] + bottom_right[1]) / 2.0)
-
-                distance = depth[center_y-1, center_x-1] * depth_sf
-
-        return corners, ids, rejected
-
-    def draw_objects(self, rgb, depth, depth_sf, corners, ids):
-
+    def get_distance(self, rgb, depth, depth_sf, corners, ids, draw=False):
         if len(corners) > 0:
             ids = ids.flatten()
-
             for (markerCorner, markerID) in zip(corners, ids):
-                if markerID == self.target_id:
+                if markerID == self.obj_id:
                     box_color, text_color = (0, 0, 255), (0, 0, 255)
                 else:
                     box_color, text_color = (0, 255, 0), (0, 255, 0)
@@ -100,57 +64,40 @@ class ArUco_marker:
                 bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
                 topLeft = (int(topLeft[0]), int(topLeft[1]))
 
-                # draw the bounding box of the ArUCo detection
-                cv2.line(rgb, topLeft, topRight, box_color, 2)
-                cv2.line(rgb, topRight, bottomRight, box_color, 2)
-                cv2.line(rgb, bottomRight, bottomLeft, box_color, 2)
-                cv2.line(rgb, bottomLeft, topLeft, box_color, 2)
                 # compute and draw the center (x, y)-coordinates of the ArUco
                 # marker
                 cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                 cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                cv2.circle(rgb, (cX, cY), 4, (255, 0, 0), -1)
-                # draw the ArUco marker ID on the image
-                cv2.putText(rgb, str(markerID),
-                            (topLeft[0], topLeft[1] - int(rgb.shape[1]/100)), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5, text_color, 2)
-                # print("[INFO] ArUco marker ID: {}".format(markerID))
-                # show the output image
-                # cv2.imshow("rgb", rgb)
-                # cv2.waitKey(0)
-    def show_distance_to_target(self):
-        if self.target_corners is not None:
-            corners = self.target_corners
-            (top_left, top_right, bottom_right, bottom_left) = corners
 
-            # Convert the (x,y) coordinate pairs to integers
-            top_right = (int(top_right[0]), int(top_right[1]))
-            bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
-            bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
-            top_left = (int(top_left[0]), int(top_left[1]))
+                distance = depth[cY - 1, cX - 1] * depth_sf
 
-            # Draw the bounding box of the ArUco detection
-            cv2.line(rgb, top_left, top_right, (0, 255, 0), 2)
-            cv2.line(rgb, top_right, bottom_right, (0, 255, 0), 2)
-            cv2.line(rgb, bottom_right, bottom_left, (0, 255, 0), 2)
-            cv2.line(rgb, bottom_left, top_left, (0, 255, 0), 2)
+                if markerID == self.obj_id:
+                    object = {
+                        "id": markerID,
+                        "distance": distance,
+                        "center": (cX, cY),
+                        "corners": (topLeft, topRight, bottomRight, bottomLeft),
+                        "box_color": box_color,
+                        "text_color": text_color,
+                    }
+                    self.objects.append(object)
 
-            # Calculate and draw the center of the ArUco marker
-            center_x = int((top_left[0] + bottom_right[0]) / 2.0)
-            center_y = int((top_left[1] + bottom_right[1]) / 2.0)
+                if draw:
+                    # draw the bounding box of the ArUCo detection
+                    cv2.line(rgb, topLeft, topRight, box_color, 2)
+                    cv2.line(rgb, topRight, bottomRight, box_color, 2)
+                    cv2.line(rgb, bottomRight, bottomLeft, box_color, 2)
+                    cv2.line(rgb, bottomLeft, topLeft, box_color, 2)
+                    cv2.circle(rgb, (cX, cY), 4, box_color, -1)
+                    # draw the ArUco marker ID on the image
+                    cv2.putText(rgb, str(markerID),
+                                (topLeft[0], topLeft[1] - int(rgb.shape[1] / 100)), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5, text_color, 2)
 
-            cv2.circle(rgb, (center_x, center_y), 6, (0, 0, 255), -1)
-
-            # Draw the ArUco marker ID on the video frame
-            # The ID is always located at the top_left of the ArUco marker
-            distance = depth[center_y - 1, center_x - 1] * depth_sf
-
-
-            cv2.putText(rgb, f'{distance:0.2f}, {direction}',
-                        (top_left[0], top_left[1] - 25),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1.1, (0, 255, 0), 2)
-
+                    cv2.putText(rgb, f'{distance:0.2f}',
+                                (topLeft[0], topLeft[1] - 25),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                1.1, text_color, 1)
 
 
 def im_show(h, w, *args, **kwargs):

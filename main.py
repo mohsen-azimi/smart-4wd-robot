@@ -44,8 +44,6 @@ def get_args_parser():
     # --model
     parser.add_argument('--detector', default='ArUco',
                         help='select the detector, ArUco, yolov5s, etc.')
-
-    # more parser: https://github.com/mohsen-azimi/detr/blob/3513d7d3a4aaee1da9aa0e22c365ffb64922eb15/main_face.py#L20
     return parser
 
 
@@ -54,134 +52,75 @@ def main(args):
     if args.detector == 'ArUco':
         obj_detector = utils.ArUco_marker()
 
-    # robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
-    robot = Fake_AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
-
+    robot = AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
+    # robot = Fake_AGV(port=args.port, baudrate=args.baudrate, timeout=args.timeout, wheel_speed=args.wheel_speed)
     camera = L515(read_bag=0, record_bag=0)
+
     # camera.reset()
     while True:
         # This call waits until a new coherent set of frames is available on a device maintain frame timing
-
         frame = camera.get_frame()
-
         color_image = frame.color_image
         depth_image = frame.depth_image
         # ir_image = frame.ir_image
         # accel = frame.accel
         # gyro = frame.gyro
-
-        # print(gyro)
         # pcd = frame.point_cloud
 
-        depth_clipped = camera.clip_distance(depth_image, color_image, 1, 3)
+        # depth_clipped = camera.clip_distance(depth_image, color_image, 1, 3)
 
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-        depth_image_colorised = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=.03), cv2.COLORMAP_JET)
+        # depth_image_colorised = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=.03), cv2.COLORMAP_JET)
 
         # # Flip image ?
         # color_image = cv.flip(color_image, 1)
         # depth_image_colorised = cv.flip(depth_image_colorised, 1)
         # infrared = cv.flip(infrared, 1)
 
+        obj_detector.find_object(color_image, depth_image, camera.depth_scale,
+                                 obj_id=1, draw=True)
 
-        obj_detector.target_id = 1  # ArUco marker id for the target item
-        (corners, ids, _) = obj_detector.find_objects(color_image)
+        if obj_detector.objects:
+            for obj in obj_detector.objects:
+                if obj['id'] == 1:
+                    print(obj['distance'])
+                    # direction = 'moveForward'
+                    if obj['distance'] > 1.0:
+                        print(obj['center'][0], obj['center'][1], obj['distance'])
+                        (w, h, _) = color_image.shape
+                        if obj['center'][0] / w < 0.5 - 0.1:
+                            direction = 'rotateLeft'
+                        elif obj['center'][0] / w > 0.5 + 0.1:
+                            direction = 'rotateRight'
+                        else:
+                            direction = 'moveForward'
 
-        obj_detector.draw_objects(color_image, depth_image, camera.depth_scale, corners, ids)
+                        robot.move(direction=direction).to_arduino()
+                        robot.cache = direction
+                        print(direction)
+                    # else:
+                    #     robot.stop().to_arduino()
+                    #     robot.cache = None
+        else:
+            robot.stop().to_arduino()
+            robot.cache = None
 
-        # obj_detector.show_distance_to_target(color_image, depth_image, camera.depth_scale, corners, ids)
 
-
-        # print(corners)
-        # if ids is not None:
-        #     find_obj = True
-        #     if [1] in ids:
-        #         idx = np.where(ids == 1)
-        #         # print(idx[0][0])
-        #         marker_corner = corners[idx[0][0]][idx[1][0]]
-        #         # print(idx, marker_corner)
-        #
-        #         corners = marker_corner.reshape((4, 2))
-        #         (top_left, top_right, bottom_right, bottom_left) = corners
-        #
-        #         # Convert the (x,y) coordinate pairs to integers
-        #         top_right = (int(top_right[0]), int(top_right[1]))
-        #         bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
-        #         bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
-        #         top_left = (int(top_left[0]), int(top_left[1]))
-        #
-        #         # Draw the bounding box of the ArUco detection
-        #         cv2.line(color_image, top_left, top_right, (0, 255, 0), 2)
-        #         cv2.line(color_image, top_right, bottom_right, (0, 255, 0), 2)
-        #         cv2.line(color_image, bottom_right, bottom_left, (0, 255, 0), 2)
-        #         cv2.line(color_image, bottom_left, top_left, (0, 255, 0), 2)
-        #
-        #         # Calculate and draw the center of the ArUco marker
-        #         center_x = int((top_left[0] + bottom_right[0]) / 2.0)
-        #         center_y = int((top_left[1] + bottom_right[1]) / 2.0)
         #
         #
         #
-        #         cv2.circle(color_image, (center_x, center_y), 6, (0, 0, 255), -1)
-        #
-        #         # print(depth_image.shape, center_x, camera.depth_scale)
-        #
-        #         # Draw the ArUco marker ID on the video frame
-        #         # The ID is always located at the top_left of the ArUco marker
-        #         distance = depth_image[center_y-1, center_x-1] * camera.depth_scale
-        #
-        #
-        #
-        #         # obsticle_grid = camera.min_pooling(depth_image * camera.depth_scale, kernel_size=100, stride=2)
-        #         # utils.im_show(640, 480, ('obsticle_grid', obsticle_grid), show_bbox=False)
-        #
-        #         # obsticle_map[obsticle_map > 0.5] = 0
-        #         # obsticle_map[obsticle_map < 0.5] = 1
-        #         # obsticle_map = obsticle_map.astype(np.uint8)
-        #         # print(obsticle_map)
-        #         # print(obsticle_map.shape)
-        #
-        #
-        #         # direction = 'moveForward'
-        #         if distance>1.0:
-        #             print(center_x, center_y, distance)
-        #
-        #             (w, h, _) = color_image.shape
-        #             if center_x / w < 0.5 - 0.1:
-        #                 direction = 'rotateLeft'
-        #             elif center_x / w > 0.5 + 0.1:
-        #                 direction = 'rotateRight'
-        #             else:
-        #                 direction = 'moveForward'
-        #
-        #             robot.move(direction=direction).to_arduino()
-        #             robot.cache = direction
-        #
-        #             cv2.putText(color_image, f'{distance:0.2f}, {direction}',
-        #                         (top_left[0], top_left[1] - 25),
-        #                         cv2.FONT_HERSHEY_SIMPLEX,
-        #                         1.1, (0, 255, 0), 2)
-        #
-        #         else:
-        #             robot.stop().to_arduino()
-        #             robot.cache = None
-        #
-        #
-        #
-        #     else:
-        #         robot.stop().to_arduino()
-        #         robot.cache = None
+        # else:
+        #     robot.stop().to_arduino()
+        #     robot.cache = None
 
         if camera.enable_rgbd:
-            utils.im_show(640, 480, ('color_image', color_image),  show_bbox=True)
+            utils.im_show(640, 480, ('color_image', color_image))
 
             # for (marker_corner, marker_id) in zip(corners, ids):
             #     # print(marker_id, "-----")
             #     if marker_id[0] == 1:
             #         # print(robot.moves[marker_id[0] - 1])
             #         break
-
-
 
             #
             # # cv.namedWindow('IR', cv.WINDOW_AUTOSIZE)
@@ -208,15 +147,12 @@ def main(args):
             # print(pcd)
             # o3d.visualization.draw_geometries(pcd, zoom=.8)
 
-
-
         if cv2.waitKey(1) & 0xff == 27:  # 27 = ESC
             break
 
     # finally:
     # Stop streaming
     camera.pipeline.stop()
-
 
 
 if __name__ == '__main__':
