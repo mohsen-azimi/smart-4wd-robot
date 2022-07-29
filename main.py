@@ -85,9 +85,10 @@ def main(args):
                 if obj['id'] == 1:
                     print(obj['distance'])
                     # direction = 'moveForward'
-                    if obj['distance'] > 1.0:
-                        print(obj['center'][0], obj['center'][1], obj['distance'])
-                        (w, h, _) = color_image.shape
+                    (w, h, _) = color_image.shape
+
+                    if obj['distance'] > 0.5:
+
                         if obj['center'][0] / w < 0.5 - 0.1:
                             direction = 'rotateLeft'
                         elif obj['center'][0] / w > 0.5 + 0.1:
@@ -98,9 +99,25 @@ def main(args):
                         robot.move(direction=direction).to_arduino()
                         robot.cache = direction
                         print(direction)
-                    # else:
-                    #     robot.stop().to_arduino()
-                    #     robot.cache = None
+
+                    else:
+
+                        if obj['center'][0] / w < 0.5 - 0.02:
+                            direction = 'rotateLeft'
+                            robot.move(direction=direction).to_arduino()
+                            robot.cache = direction
+
+                        elif obj['center'][0] / w > 0.5 + 0.02:
+                            direction = 'rotateRight'
+                            robot.move(direction=direction).to_arduino()
+                            robot.cache = direction
+                        else:
+                            robot.stop().to_arduino()
+                            robot.cache = None
+
+
+
+
         else:
             robot.stop().to_arduino()
             robot.cache = None
